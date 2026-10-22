@@ -275,6 +275,11 @@ sample_frac = st.sidebar.slider("QBER Sample Fraction", min_value=0.10, max_valu
 seed_val = st.sidebar.number_input("Random Seed (Reproducibility)", min_value=1, max_value=99999, value=42)
 
 st.sidebar.divider()
+if HAS_TEAM_MODULES:
+    st.sidebar.success("⚛️ **Engine:** Real Qiskit Aer Active (`bb84.py` + `security.py`)")
+else:
+    st.sidebar.warning("⚠️ **Engine:** Running in Standalone Fallback Mode")
+
 st.sidebar.info("""
 **Team Architecture Handshake**:
 - **Member 1**: `bb84.py` (Qiskit quantum core)
@@ -329,10 +334,10 @@ with tab_live:
     if res["qber"] > 0.10:
         st.markdown(f"""
         <div class="channel-box" style="background-color: rgba(220, 38, 38, 0.15); border-color: #dc2626; color: #fca5a5;">
-            <h4 style="margin: 0; color: #f87171;">⚠️ SECURITY WARNING: HIGH ERROR RATE DETECTED ({qber_pct:.2f}%)</h4>
+            <h4 style="margin: 0; color: #f87171;">⚠️ DEMONSTRATION WARNING: HIGH ERROR RATE DETECTED ({qber_pct:.2f}%)</h4>
             <p style="margin: 4px 0 0 0; color: #fecaca; font-size: 0.95rem;">
-                <strong>Verdict:</strong> {res['status']}. The Quantum Bit Error Rate exceeds the 10.0% security threshold.
-                Alice and Bob must <strong>ABORT</strong> the key generation! Disturbances indicate an eavesdropper (Eve) or intolerable channel noise.
+                <strong>Verdict:</strong> {res['status']}. The Quantum Bit Error Rate exceeds the 10.0% demonstration warning threshold.
+                Alice and Bob must <strong>ABORT</strong> key generation! Disturbances indicate an eavesdropper (Eve) or high channel noise.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -341,8 +346,8 @@ with tab_live:
         <div class="channel-box" style="background-color: rgba(5, 150, 105, 0.15); border-color: #059669; color: #6ee7b7;">
             <h4 style="margin: 0; color: #34d399;">🛡️ CLEAN CHANNEL: ZERO ERRORS DETECTED (0.0%)</h4>
             <p style="margin: 4px 0 0 0; color: #a7f3d0; font-size: 0.95rem;">
-                <strong>Verdict:</strong> {res['status']}. In the ideal quantum model without Eve or noise, Alice and Bob establish matching sifted bits.
-                The remaining {res['remaining_bits']} bits can proceed to key derivation.
+                <strong>Verdict:</strong> {res['status']}. In this ideal noiseless simulation without an active eavesdropper, all matching bases yield identical bits.
+                The remaining {res['remaining_bits']} sifted bits are retained. In production QKD, error reconciliation and privacy amplification must follow before key derivation.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -351,8 +356,8 @@ with tab_live:
         <div class="channel-box" style="background-color: rgba(217, 119, 6, 0.15); border-color: #d97706; color: #fcd34d;">
             <h4 style="margin: 0; color: #fbbf24;">⚡ TOLERABLE ERRORS DETECTED ({qber_pct:.2f}%)</h4>
             <p style="margin: 4px 0 0 0; color: #fde68a; font-size: 0.95rem;">
-                <strong>Verdict:</strong> {res['status']}. Errors exist below the 10% threshold.
-                In physical QKD, classical Error Correction (Information Reconciliation) and Privacy Amplification are applied to eliminate residual leakage.
+                <strong>Verdict:</strong> {res['status']}. Errors exist below the 10.0% demonstration warning threshold.
+                Note that low sample QBER does not prove absolute security or absence of eavesdropping. In physical QKD, classical Error Correction (Information Reconciliation) and Privacy Amplification are applied to eliminate residual leakage.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -366,9 +371,18 @@ with tab_live:
     with m_col3:
         st.metric("Public Sampled Bits", res["sampled_bits"], delta=f"{res['sample_errors']} errors")
     with m_col4:
-        st.metric("Measured QBER", f"{qber_pct:.2f}%", delta=f"{'EXCEEDS 10%' if qber_pct > 10 else 'SAFE <= 10%'}", delta_color="inverse" if qber_pct > 10 else "normal")
+        st.metric("Measured QBER", f"{qber_pct:.2f}%", delta=f"{'EXCEEDS 10%' if qber_pct > 10 else '<= 10% (LOW ERROR)'}", delta_color="inverse" if qber_pct > 10 else "normal")
     with m_col5:
-        st.metric("Secure Remaining Bits", res["remaining_bits"])
+        st.metric("Remaining Sifted Bits", res["remaining_bits"])
+
+    st.markdown("""
+    <div style="background-color: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; padding: 10px 14px; border-radius: 6px; margin: 12px 0 4px 0; font-size: 0.88rem; color: #bfdbfe;">
+        <strong>Educational Demonstration Notice:</strong>
+        The 10.0% QBER threshold is an educational demonstration setting, not a universal proof of an attacker. High QBER can result from Eve or channel noise.
+        Conversely, low QBER does not prove the total absence of eavesdropping. Remaining sifted bits require classical error reconciliation
+        and privacy amplification before becoming a cryptographically secure key.
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -376,7 +390,7 @@ with tab_live:
     v_col1, v_col2 = st.columns([1, 1])
 
     with v_col1:
-        st.markdown("##### 🎯 QBER Gauge vs Security Threshold")
+        st.markdown("##### 🎯 QBER Gauge vs Demonstration Warning Threshold")
         fig_gauge = go.Figure(go.Indicator(
             mode="gauge+number",
             value=qber_pct,
@@ -403,7 +417,7 @@ with tab_live:
         ))
         fig_gauge.update_layout(height=280, margin=dict(l=20, r=20, t=40, b=20))
         st.plotly_chart(fig_gauge, use_container_width=True)
-        st.caption("• 0–10%: Acceptable zone (noise only) | • >10%: Abort zone (Eve or heavy noise) | • ~25%: Ideal Eve Intercept-Resend average")
+        st.caption("• 0–10%: Demonstration low-error zone (noise possible) | • >10%: Demonstration warning zone (Eve or heavy noise) | • ~25%: Ideal Eve Intercept-Resend average. (Note: 10% is a hackathon demo setting, not a universal security proof.)")
 
     with v_col2:
         st.markdown("##### 🔄 BB84 Quantum Key Pipeline")
@@ -412,7 +426,7 @@ with tab_live:
                 "1. Initial Qubits Sent",
                 "2. Sifted Bits (Bases Matched)",
                 "3. Public Sample (Revealed)",
-                "4. Remaining Usable Key"
+                "4. Remaining Sifted Bits"
             ],
             "Count": [
                 res["n_bits"],
@@ -425,7 +439,7 @@ with tab_live:
                                color_discrete_sequence=["#3b82f6", "#8b5cf6", "#ec4899", "#10b981"])
         fig_funnel.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), showlegend=False)
         st.plotly_chart(fig_funnel, use_container_width=True)
-        st.caption("Notice: Publicly tested sample bits are discarded and NEVER included in the remaining secret key.")
+        st.caption("Notice: Publicly tested sample bits are discarded and NOT included in the remaining sifted bits.")
 
     # Quantum Bit Stream Inspection Table
     st.markdown("---")
@@ -491,7 +505,7 @@ with tab_bench:
                 "QBER (%)": [res_clean["qber"] * 100, res_eve["qber"] * 100, res_noise["qber"] * 100],
                 "Expected Theoretical QBER": ["0.0%", "~25.0%", "~8.0%"],
                 "Sifted Bits": [res_clean["sifted_bits"], res_eve["sifted_bits"], res_noise["sifted_bits"]],
-                "Security Status": [res_clean["status"], res_eve["status"], res_noise["status"]]
+                "Protocol Status": [res_clean["status"], res_eve["status"], res_noise["status"]]
             })
 
             # Bar Chart
@@ -509,7 +523,7 @@ with tab_bench:
                 title="Empirical QBER Comparison across Scenarios (Qiskit Simulation)"
             )
             fig_bar.add_hline(y=10.0, line_dash="dash", line_color="red",
-                              annotation_text="10% Security Warning Threshold", annotation_position="top left")
+                              annotation_text="10% Demonstration Warning Threshold", annotation_position="top left")
             fig_bar.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
             fig_bar.update_layout(height=380)
 
@@ -517,9 +531,10 @@ with tab_bench:
             st.dataframe(comp_df, use_container_width=True)
 
             st.markdown("""
-            > **Judges' Key Takeaway:**
-            > Notice how Eve's intercept-resend attack reliably produces **~25% QBER**, starkly separating it from the ideal clean channel (0%).
-            > This directly manifests the **No-Cloning Theorem** and the disturbance introduced when quantum states are measured in incompatible non-orthogonal bases!
+            > **Judges' Key Takeaways:**
+            > - Eve's intercept-resend attack reliably introduces **~25% QBER**, clearly distinguishing it from an ideal noiseless channel ($0\\%$).
+            > - **Noise vs. Attack:** Channel noise alone (e.g. 8%) also produces errors without an eavesdropper. The 10% threshold is an educational demonstration setting, not a universal proof of an attacker.
+            > - **Security Limitations:** A low or zero QBER does not prove absolute security. In real-world QKD, authenticated classical channels, classical error correction (reconciliation), and privacy amplification are mandatory.
             """)
     else:
         st.info("Click the button above to generate a side-by-side empirical benchmark of Clean vs Eve vs Noisy channels.")
@@ -594,13 +609,15 @@ with tab_guide:
         st.markdown("""
         ##### 2. Crucial Security Notice & Limitations
         > **Educational Simulator Disclaimer:**
-        > QShield is a proof-of-concept learning simulator built for the VTU Qiskit Fall Fest hackathon.
+        > QShield is an educational proof-of-concept simulator built for the VTU Qiskit Fall Fest hackathon.
         >
-        > - **QBER < 10% does NOT guarantee absolute safety:** In physical optical QKD, channel attenuation, detector dark counts, and photon number splitting (PNS) attacks exist.
-        > - **Production QKD requirements:**
-        >   1. Authenticated classical public channel (Wegman-Carter MACs).
-        >   2. Information Reconciliation (Cascade or LDPC error correction).
-        >   3. Privacy Amplification (Universal hashing to compress the key and eliminate Eve's partial mutual information).
+        > - **Low or zero QBER does NOT prove the absence of eavesdropping:** More sophisticated attacks (such as beam-splitting, photon-number splitting on weak coherent pulses, or side-channel leakage) can steal partial information without generating 25% error.
+        > - **High QBER can occur without Eve:** Optical fiber attenuation, polarization drift, and detector dark counts cause errors in legitimate channels.
+        > - **The 10% QBER threshold is a demonstration setting:** In real-world QKD, the tolerable error threshold is mathematically derived from the Shannon limit and privacy amplification bounds.
+        > - **Production QKD requirements before a key is considered secure:**
+        >   1. Authenticated classical public channel (e.g. Wegman-Carter MACs).
+        >   2. Information Reconciliation (Cascade or LDPC classical error correction).
+        >   3. Privacy Amplification (Universal hashing to compress remaining sifted bits into a final secret key).
         """)
 
     st.markdown("---")
@@ -608,8 +625,8 @@ with tab_guide:
     st.markdown("""
     | Member | Role | Files Owned | Status |
     | :--- | :--- | :--- | :--- |
-    | **Member 1** | Quantum Core Engine (Qiskit circuits & Aer measurement) | `bb84.py`, `test_quantum.py` | Qiskit Aer simulation engine |
-    | **Member 2** | Security Protocol & Attack Simulation | `security.py`, `tests/` | BB84 logic, Eve attack, QBER verification |
+    | **Member 1** | Quantum Core Engine (Qiskit circuits & Aer measurement) | `bb84.py`, `test_quantum.py` | Real Qiskit Aer simulation engine active |
+    | **Member 2** | Security Protocol & Attack Simulation | `security.py`, `tests/` | Active BB84 protocol & attack simulation |
     | **Member 3 (You)** | Interactive Dashboard & Documentation | `app.py`, `README.md`, `presentation/` | Live Streamlit app, benchmark suite, slide deck |
     """)
 
