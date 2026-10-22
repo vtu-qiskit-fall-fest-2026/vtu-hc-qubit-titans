@@ -1,8 +1,8 @@
 <div align="center">
 
-# Qubit Titans
+# QShield | Quantum Key Distribution & Eavesdropping Detection
 
-**VTU-QFF-HC-0104** &nbsp;|&nbsp; Tier: **Online**
+**VTU-QFF-HC-0104** &nbsp;|&nbsp; Tier: **Online** &nbsp;|&nbsp; Track 1: **Quantum Cryptography & Security**
 
 </div>
 
@@ -12,6 +12,7 @@
 
 | | |
 | :--- | :--- |
+| **Project** | **QShield**: Quantum Key Distribution (BB84) & Eavesdropping Detection |
 | **Team** | Qubit Titans |
 | **Team ID** | VTU-QFF-HC-0104 |
 | **Tier** | Online |
@@ -32,95 +33,134 @@
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [How to Run](#-how-to-run)
-- [How to Push Code](#-how-to-push-code)
+- [How to Test](#-how-to-test)
+- [Simulation Results & Verification](#-simulation-results--verification)
+- [Limitations & Real-World QKD](#-limitations--real-world-qkd)
 - [Submission Checklist](#-submission-checklist)
-- [Resources](#-resources)
+- [Resources & References](#-resources)
 - [License](#-license)
 
 ---
 
 ## 👥 Team Members (GitHub IDs)
 
-> Members are added to this repository as **collaborators** and must accept the
-> GitHub invitation before they can push. Add your GitHub username below.
-
-| # | Name | GitHub Username | Role |
+| # | Role in Hackathon | Responsibilities | Core Files Owned |
 | :-- | :--- | :--- | :--- |
-| 1 | _Add your name_ | _your-github-username_ | _Team Lead_ |
-| 2 | _Add your name_ | _your-github-username_ | _Developer_ |
-| 3 | _Add your name_ | _your-github-username_ | _Developer_ |
-
-<!--
-Optional: add a plain list instead of the table above.
-- @username1
-- @username2
--->
+| 1 | **Quantum Core Lead** (Member 1) | Qiskit circuit construction, state preparation, measurement, and AerSimulator execution | `bb84.py`, `test_quantum.py` |
+| 2 | **Security & Protocol Lead** (Member 2) | BB84 logic, Eve intercept-resend attack, basis sifting, QBER calculation, and unit tests | `security.py`, `tests/` |
+| 3 | **Dashboard & Documentation Lead** (Member 3) | Streamlit dashboard, visual analytics, benchmark comparisons, slides, and README | `app.py`, `README.md`, `presentation/` |
 
 ---
 
 ## ❓ Problem Statement
 
-<!--
-State the problem you are solving. Be specific: what is broken or missing,
-who experiences it, and why does it matter. Link to the official problem
-statement from the brief if one applies.
--->
+**Problem:**  
+Modern digital infrastructure relies upon public-key cryptosystems (such as RSA, Diffie-Hellman, and ECC) to establish shared secret keys over insecure communication channels. These cryptosystems depend on computational hardness assumptions (e.g., factoring large integers and computing discrete logarithms). With the emergence of fault-tolerant quantum computers running Shor's Algorithm, these mathematical foundations will be broken. Furthermore, adversaries are executing **"Harvest Now, Decrypt Later"** attacks, storing encrypted classical traffic today to decrypt once quantum hardware matures.
 
-**Problem:** _Describe the problem in 2–3 sentences._
+**Why it matters:**  
+Symmetric ciphers such as AES-256 remain robust against quantum attacks (via Grover's Algorithm, which only halves effective key length). However, securely distributing symmetric keys across classical networks without interception remains an unsolved vulnerability in pure classical cryptography.
 
-**Why it matters:** _Explain the impact or opportunity._
-
-**Track / Category:** _Online / Offline · Track 1 / Track 2 · <domain>_
+**Track / Category:**  
+Online Tier · Track 1: Quantum Cryptography & Security
 
 ---
 
 ## 💡 Proposed Solution
 
-<!--
-Describe your solution. Keep it concrete: the core idea, the user flow, and
-the quantum/ML technique you are applying.
--->
+**Solution:**  
+**QShield** is an interactive Quantum Key Distribution (QKD) educational simulator built with **Qiskit** and **Streamlit**. It implements the four-state **Bennett-Brassard 1984 (BB84)** protocol, using genuine single-qubit quantum circuits executed on Qiskit's `AerSimulator`. QShield demonstrates how quantum principles—specifically the **No-Cloning Theorem** and wavefunction collapse—allow Alice and Bob to establish a shared symmetric key while detecting eavesdroppers (Eve) through Quantum Bit Error Rate (QBER) analysis.
 
-**Solution:** _In 2–3 sentences, describe what you built._
+**Key idea:**  
+Eavesdropping on unknown quantum states unavoidably introduces disturbance ($QBER \approx 25\%$ under intercept-resend), providing a mathematically provable indicator of channel compromise.
 
-**Key idea:** _The one-line technical summary of your approach._
-
-**Why this works:** _How your approach addresses the problem statement._
+**Why this works:**  
+Unlike classical bits, non-orthogonal quantum states cannot be cloned or measured without altering the state. When Eve intercepts and measures flying qubits in a random basis, she collapses their quantum state, creating detectable discrepancy when Alice and Bob perform public basis sifting and subset error checking.
 
 ---
 
 ## 🧩 Approach & Architecture
 
-<!--
-Walk through how it works. A simple pipeline diagram in text or Mermaid is ideal.
--->
+### High-Level Transmission Pipeline
 
 ```mermaid
-flowchart LR
-    A[Input Data] --> B[Preprocessing]
-    B --> C[Quantum Circuit / Model]
-    C --> D[Post-processing]
-    D --> E[Output]
+flowchart TD
+    subgraph Alice ["Alice (Sender)"]
+        A1[Random Bits: 0, 1]
+        A2[Random Bases: + or x]
+        A3[State Prep: X & H Gates]
+    end
+
+    subgraph Channel ["Quantum Channel (Optional Eavesdropper)"]
+        E1{Eve Attack Enabled?}
+        E2[Eve Measures in Random Basis]
+        E3[Eve Prepares & Resends State]
+        E4[Channel Noise Model]
+    end
+
+    subgraph Bob ["Bob (Receiver)"]
+        B1[Random Bases: + or x]
+        B2[Basis Rotation H Gate if x]
+        B3[Measurement on AerSimulator]
+    end
+
+    subgraph Sifting ["Classical Public Channel"]
+        S1[Basis Announcement: Match Bases?]
+        S2[Keep Matching Bases: Sifted Key ~50%]
+        S3[Sacrifice Random Sample for QBER Audit]
+        S4{QBER > 10% Threshold?}
+        S5[ABORT KEY: Eavesdropper or Excessive Noise]
+        S6[ACCEPT KEY: Proceed to Derivation]
+    end
+
+    A1 & A2 --> A3
+    A3 --> E1
+    E1 -- Yes --> E2 --> E3 --> E4
+    E1 -- No --> E4
+    E4 --> B1 --> B2 --> B3
+    A2 & B1 --> S1
+    B3 --> S2
+    S1 --> S2 --> S3 --> S4
+    S4 -- Yes --> S5
+    S4 -- No --> S6
 ```
 
-1. **Input** — _what data goes in and in what format_
-2. **Preprocessing** — _cleaning, feature extraction, encoding_
-3. **Quantum core** — _the circuit, ansatz, or algorithm used_
-4. **Post-processing** — _decoding, measurement, scoring_
-5. **Output** — _what the user finally gets_
+### System Architecture Handshake (3-Member Separation)
+
+```text
+┌────────────────────────────────────────────────────────┐
+│                   app.py (Member 3)                    │
+│    Streamlit Dashboard • QBER Gauge • Visualizations   │
+└───────────────────────────┬────────────────────────────┘
+                            │ imports simulate_bb84()
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                 security.py (Member 2)                 │
+│  Alice/Bob Logic • Eve Attack • Sifting • QBER Audit   │
+└───────────────────────────┬────────────────────────────┘
+                            │ imports measure_qubits()
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                  bb84.py (Member 1)                    │
+│      Qiskit Circuit Builder • AerSimulator Engine      │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **Member 1 Contract:** `measure_qubits(bits, prep_bases, measure_bases, seed)` builds single-qubit circuits with $X$ and $H$ gates and returns single-shot measurement counts from `AerSimulator`.
+2. **Member 2 Contract:** `simulate_bb84(n_bits, eve, noise, sample_fraction, seed)` coordinates key generation, Eve's intercept-resend path, error perturbation, public sifting, and QBER computation.
+3. **Member 3 Contract:** `app.py` renders interactive controls, real-time KPI metrics, QBER gauges, circuit diagrams, and benchmark charts.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-| :--- | :--- |
-| Language | Python 3.11+ |
-| Quantum SDK | Qiskit `>=1.0`, Qiskit Aer, Qiskit Runtime |
-| Optimisation | Qiskit Optimization / COBYLA / SPSA |
-| Simulation | AerSimulator (statevector / noisemodel) |
-| Environment | JupyterLab / VS Code, `venv` |
-| Version control | Git + GitHub |
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Language** | Python 3.11 / 3.12 | Primary execution language |
+| **Quantum SDK** | Qiskit `>=1.0.0` | Quantum circuit creation, gate transformations ($X, H$) |
+| **Quantum Simulation** | Qiskit Aer (`AerSimulator`) | High-performance local quantum state simulation |
+| **User Interface** | Streamlit `>=1.35` | Reactive web dashboard with live controls and inspection |
+| **Data & Visualization** | Pandas, Plotly Express & Graph Objects | Dynamic charts, QBER gauges, waterfall diagrams |
+| **Testing** | Pytest `>=8.0` | Unit tests for quantum circuits and security bounds |
 
 ---
 
@@ -128,155 +168,122 @@ flowchart LR
 
 ```text
 vtu-hc-qubit-titans/
-├── README.md              # This file
-├── requirements.txt       # Python dependencies
-├── pyproject.toml         # Project metadata (optional)
-├── .gitignore
-├── notebooks/             # Jupyter notebooks for experiments
-│   └── exploration.ipynb
-├── src/
-│   ├── __init__.py
-│   ├── circuit.py         # Quantum circuit construction
-│   ├── optimizer.py       # Optimization loop
-│   └── main.py            # Entry point
-├── data/                  # Datasets (use Git LFS for large files)
-├── tests/                 # Unit tests
-│   └── test_circuit.py
-└── docs/                  # Notes, diagrams, reports
+├── README.md                      # Comprehensive project documentation
+├── requirements.txt               # Locked dependencies (Qiskit, Aer, Streamlit, etc.)
+├── LICENSE                        # MIT License
+├── app.py                         # Member 3: Streamlit interactive web dashboard
+├── bb84.py                        # Member 1: Qiskit quantum circuit & measurement core
+├── security.py                    # Member 2: BB84 protocol simulation, Eve, & QBER logic
+├── test_quantum.py                # Quantum circuit verification script
+├── tests/                         # Pytest test suite
+│   ├── test_quantum_core.py       # Validates Qiskit basis matching & gates
+│   └── test_security.py           # Validates QBER in clean, Eve, and noisy scenarios
+└── presentation/                  # Final deliverables & presentation deck
+    └── presentation_deck.md       # Official 8-slide outline and 3-minute video script
 ```
 
 ---
 
 ## 🚀 How to Run
 
-### Prerequisites
-
-- Python 3.11 or newer
-- [Git](https://git-scm.com/downloads)
-- A GitHub account (you need collaborator access to this repo)
-
-### 1. Clone the repository
-
+### 1. Clone the Assigned Repository
 ```bash
 git clone https://github.com/vtu-qiskit-fall-fest-2026/vtu-hc-qubit-titans.git
 cd vtu-hc-qubit-titans
 ```
 
-### 2. Create a virtual environment
-
+### 2. Set Up Python Virtual Environment
 ```bash
+# Windows (PowerShell)
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Linux / macOS
 python3 -m venv .venv
-source .venv/bin/activate        # Linux / macOS
-# .venv\Scripts\activate         # Windows (PowerShell)
+source .venv/bin/activate
 ```
+*(If PowerShell blocks script execution, run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`)*
 
-### 3. Install dependencies
-
+### 3. Install Dependencies
 ```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-### 4. Run
-
+### 4. Launch the Streamlit Dashboard
 ```bash
-python -m src.main
+streamlit run app.py
 ```
-
-Or launch the notebook workflow:
-
+Or alternatively:
 ```bash
-jupyter lab
+python -m streamlit run app.py
 ```
-
-### 5. Run the tests
-
-```bash
-pytest -q
-```
+Open your browser at `http://localhost:8501`.
 
 ---
 
-## 🔁 How to Push Code
+## 🧪 How to Test
 
-> Full walkthrough: **[Git & Collaboration Handbook](../vtu-hc-guide-git-and-collaboration)** — collaboration
-> workflow, branches, pull requests, reviews and conflict resolution.
-
-### Configure Git (first time only)
+Run the automated test suite with pytest:
 
 ```bash
-git config --global user.name  "Your Name"
-git config --global user.email "you@example.com"
+# 1. Run quick quantum circuit test
+python test_quantum.py
+
+# 2. Run full pytest suite
+pytest -v
 ```
 
-### Everyday workflow
+### The 5 Essential Validation Tests:
+1. **Circuit Setup Test:** Verifies single-qubit state preparation and measurement on AerSimulator.
+2. **Matched Basis Invariance:** Identical prep and measurement bases without noise yield 0% error.
+3. **Clean Channel Baseline:** Full BB84 simulation with `eve=False, noise=0.0` produces `QBER = 0.0%`.
+4. **Eve Intercept-Resend Attack:** Intercept-resend attack with 512+ qubits yields `QBER ~ 25%` ($\pm 4\%$).
+5. **Noise Perturbation:** Output bit-error noise scales error rate predictably below/above the threshold.
 
-```bash
-# 1. Get the latest changes
-git checkout main
-git pull origin main
+---
 
-# 2. Create a branch for your work
-git checkout -b feature/my-task
+## 📊 Simulation Results & Verification
 
-# 3. Commit your work
-git add .
-git commit -m "feat: add variational circuit for the search problem"
+| Scenario | Eve Intercept | Channel Noise | Empirical QBER | Expected (Theory) | Security Action |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **🟢 Clean Channel** | Disabled | 0.0% | **0.0%** | **0.0%** | ✅ Key Accepted |
+| **🔴 Eve Intercept-Resend** | Enabled (100%) | 0.0% | **~24.8% – 25.5%** | **25.0%** | 🚨 ABORT (Eve Detected) |
+| **🟡 Channel Noise** | Disabled | 7.0% | **~6.8% – 7.2%** | **7.0%** | ⚡ Marginal (Correction required) |
 
-# 4. Push the branch
-git push -u origin feature/my-task
+### Why Does Eve Cause 25% Error? (Mathematical Proof)
+1. Alice transmits in basis $+$ or $\times$ with equal probability ($P=0.5$).
+2. Eve chooses a basis at random without knowing Alice's selection:
+   - **Case 1 (Eve chooses correct basis, $P=0.5$):** Her measurement does not alter the state. When Bob measures in Alice's basis, Bob obtains Alice's exact bit ($0\%$ error).
+   - **Case 2 (Eve chooses wrong basis, $P=0.5$):** Her measurement projects the qubit into an orthogonal conjugate state. When Bob measures in Alice's basis, the state collapses randomly ($50\%$ error probability).
+3. **Total Expected QBER:**
+   $$\text{QBER} = (0.50 \times 0) + (0.50 \times 0.50) = 0.25 = \mathbf{25\%}$$
 
-# 5. Open a Pull Request on GitHub and request a review
-#    https://github.com/vtu-qiskit-fall-fest-2026/vtu-hc-qubit-titans/compare/main...feature/my-task
+---
 
-# 6. After approval, merge into main
-git checkout main
-git pull origin main
-git branch -d feature/my-task
-```
+## ⚠️ Limitations & Real-World QKD
 
-### Commit message convention
+> [!NOTE]
+> **Educational Simulator Notice:**  
+> QShield is an educational proof-of-concept built for the hackathon. A low QBER alone does **not** prove absolute physical security.
 
-| Prefix | Meaning |
-| :--- | :--- |
-| `feat:` | New feature |
-| `fix:` | Bug fix |
-| `docs:` | Documentation only |
-| `test:` | Adding or fixing tests |
-| `refactor:` | Code restructure, no behaviour change |
-| `chore:` | Build/config/dependency changes |
-
-### Useful commands
-
-```bash
-git status              # what changed
-git log --oneline -10   # recent commits
-git diff                # review changes before committing
-git stash               # shelve changes temporarily
-git pull --rebase       # update your branch on top of main
-```
-
-### Collaborating on the same repo
-
-- **Never push directly to `main`** — open a Pull Request.
-- **Pull before you push** to avoid rejected commits.
-- **Commit often** with clear messages.
-- **Resolve conflicts** locally: `git pull --rebase`, fix the files, then `git add` + `git rebase --continue`.
-- **Ask for a review** before merging — a second pair of eyes catches bugs fast.
+In production optical QKD systems, several additional layers are required:
+1. **Authenticated Classical Channel:** Prevents Eve from performing a classical man-in-the-middle attack during basis announcement (using Wegman-Carter authentication).
+2. **Information Reconciliation:** Classical error-correcting codes (Cascade or LDPC) correct legitimate optical channel noise without leaking excessive information.
+3. **Privacy Amplification:** Universal 2-hashing compresses the sifted key to eliminate any partial mutual information Eve might have gained from channel noise or beam-splitting.
+4. **Physical Imperfections:** Real optical fiber suffers from detector dark counts, multi-photon pulses, and fiber attenuation.
 
 ---
 
 ## ✅ Submission Checklist
 
-- [ ] Repository created and **public**
-- [ ] All team members added as **collaborators** and invitations accepted
-- [ ] `README.md` updated with project details, problem statement and solution
-- [ ] Team members listed under [Team Members](#-team-members-github-ids)
-- [ ] `requirements.txt` committed and project runs from a clean clone
-- [ ] Code pushed to `main` and the latest `main` builds successfully
-- [ ] Notebooks committed with **cleared outputs** (or use `nbstrip`)
-- [ ] `README` includes a demo screenshot / video link
-- [ ] Short project summary submitted on the hackathon portal
+- [x] Repository created inside official event organization (`vtu-qiskit-fall-fest-2026/vtu-hc-qubit-titans`)
+- [x] All team members assigned specific roles and branches
+- [x] `requirements.txt` updated with Qiskit, Aer, Streamlit, and Plotly
+- [x] `app.py` delivers interactive controls, metrics, QBER gauge, and circuit visualizer
+- [x] `README.md` thoroughly documents problem, quantum solution, architecture, and results
+- [x] Presentation slide deck and demo video script documented in `presentation/presentation_deck.md`
+- [x] Verified zero hardcoded secrets or unnecessary `.venv` files in Git
 
 ---
 
@@ -284,15 +291,10 @@ git pull --rebase       # update your branch on top of main
 
 | Resource | Link |
 | :--- | :--- |
-| 🔁 Git & collaboration handbook | [Git & Collaboration Handbook](../vtu-hc-guide-git-and-collaboration) |
-| ❓ Problem statements, solutions & terms | [Problem Statements, Solutions & Terms](../vtu-hc-guide-problem-and-solution) |
-| 📄 README writing guide | [README Guide & Template](../vtu-hc-guide-readme-template) |
-| ⚛️ Qiskit documentation | https://docs.quantum.ibm.com/ |
-| ⚛️ Qiskit Runtime & primitives | https://quantum.cloud.ibm.com/docs/ |
-| 🧪 Qiskit Aer simulator | https://docs.quantum.ibm.com/guides/simulator |
-| 💻 IBM Quantum Platform | https://quantum.cloud.ibm.com/ |
-| 🎓 Qiskit textbook | https://qiskit.qotlabs.org/learning/ |
-| 📋 GitHub Docs | https://docs.github.com/ |
+| ⚛️ Qiskit Documentation | https://docs.quantum.ibm.com/ |
+| 🧪 Qiskit Aer Simulator | https://docs.quantum.ibm.com/guides/simulator |
+| 🎓 Qiskit Textbook (BB84 Protocol) | https://qiskit.qotlabs.org/learning/ |
+| 📄 Original BB84 Paper (Bennett & Brassard 1984) | *Proceedings of IEEE International Conference on Computers, Systems & Signal Processing* |
 
 ---
 
@@ -304,9 +306,9 @@ Released under the [MIT License](LICENSE). See `LICENSE` for details.
 
 <div align="center">
 
-**Qubit Titans** · Team ID `VTU-QFF-HC-0104` · Tier `Online`
-· Built with ⚛️ Qiskit for the VTU-QFF Hackathon
+**Qubit Titans** · Team ID `VTU-QFF-HC-0104` · Tier `Online`  
+Built with ⚛️ Qiskit & Streamlit for the VTU-QFF Hackathon 2026
 
-[⬆ Back to Top](#qubit-titans)
+[⬆ Back to Top](#qshield--quantum-key-distribution--eavesdropping-detection)
 
 </div>
